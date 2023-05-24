@@ -38,12 +38,12 @@
         </div>
     </header>
     <main class="container col-12 col-md-8 col-lg-5 p-4 mx-auto">
-        <div class="search-bar">
-            <input type="text" id="search" class="form-control p-3" placeholder="新增待辦事項">
-            <button class="search-btn" id="search_btn">
+        <form class="search-bar" id="searchBar">
+            <input type="text" id="todoInput" class="form-control p-3" placeholder="新增待辦事項">
+            <button class="search-btn" id="addTodo_btn" type="submit">
                 <i class="bi bi-plus-square-fill"></i>
             </button>
-        </div>
+        </form>
         <div class="empty d-flex flex-column align-items-center">
             <h2 class="h5 pt-6 mt-1">目前尚無待辦事項</h2>
             <img src="./images/empty 1.png" alt="empty_img">

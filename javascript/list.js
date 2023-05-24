@@ -1,7 +1,7 @@
 const headerLogout = document.querySelector('.header_logout');
-const loadingPage = document.querySelector('.loadingPage');
-const search_btn = document.querySelector('#search_btn');
-const search = document.querySelector('#search');
+const loadingOberlay = document.querySelector('.loadingPage');
+const todoInput = document.querySelector('#todoInput');
+const searchBar = document.querySelector('#searchBar');
 const empty = document.querySelector('.empty');
 const todoList = document.querySelector('.todoList');
 const list = document.querySelector('.list');
@@ -15,7 +15,7 @@ const blank = /^[\s]/g;
 const apiUrl = `https://todoo.5xcamp.us`;
 let logOutBtn;
 let not_complete = 0;
-function  init_token_render(token){//檢查有無token，若無token不顯示登入後的畫面
+function  initTokenRender(token){//檢查有無token，若無token不顯示登入後的畫面
     if(token){
         let nickname = sessionStorage.getItem('nickname');
         headerLogout.innerHTML = `<h2 class="h4 d-none d-md-block mb-0 mx-2">${nickname} 的代辦</h2><a href="#" class="link-danger text-center" id="logOut">登出</a>`;
@@ -30,19 +30,19 @@ function  init_token_render(token){//檢查有無token，若無token不顯示登
     }
 }
 
-function check_token(){//確認是否有token
+function checkToken(){//確認是否有token
     if(sessionStorage.getItem('token')){
-        if(blank.test(search.value)|| search.value ===""){
+        if(blank.test(todoInput.value)|| todoInput.value ===""){
             Swal.fire({
                 icon: 'error',
                 title: '發生錯誤',
                 text: '你要新增的項目不可為空 !'
             })
-            search.value = '';
+            todoInput.value = '';
             return;
         }else{
-            const add_item = search.value;
-            check_same(add_item);
+            const add_item = todoInput.value;
+            checkSame(add_item);
         }
     }else{
         Swal.fire({
@@ -53,14 +53,14 @@ function check_token(){//確認是否有token
         return;
     }
 }
-function check_same(add_item){ //確認項目是否重複
+function checkSame(add_item){ //確認項目是否重複
     axios.get(`${apiUrl}/todos`)
     .then(res =>{
         const check = res.data.todos.some(item =>{
             return item.content == add_item.trim();
         })
         if(check){
-            search.value ="";
+            todoInput.value ="";
             Swal.fire({
                 icon: 'error',
                 title: '發生錯誤',
@@ -68,7 +68,7 @@ function check_same(add_item){ //確認項目是否重複
             })
             return;
         }else{
-            add_todo(add_item);
+            addTodo(add_item);
         }
     })
 }
@@ -87,8 +87,7 @@ function getTodo(type){//取得Todolist
             all_todo.splice(0,all_todo.length);
             return;
         }else{
-            not_complete = all_todo.length;
-            html_render(type);
+            renderList(type);
             empty.classList.add('d-none');
             todoList.classList.remove('d-none');
         }
@@ -102,8 +101,8 @@ function getTodo(type){//取得Todolist
     })
 }
 
-function add_todo(item){ //新增todolist
-    const current_tab = check_current_tab();
+function addTodo(item){ //新增todolist
+    const current_tab = checkCurrentTab();
     axios.post(`${apiUrl}/todos`,{
         "todo":{
             "content": item
@@ -117,19 +116,34 @@ function add_todo(item){ //新增todolist
             showConfirmButton: false,
             timer: 1500
         })
-        search.value="";
+        todoInput.value="";
         getTodo(current_tab);
     })
 }
-function del_todo(key){//刪除todolist
+function delTodo(key){//刪除todolist
     axios.delete(`${apiUrl}/todos/${key}`)
     .then(res =>{
-            const current_tab = check_current_tab();
+            const current_tab = checkCurrentTab();
             getTodo(current_tab);
     })
 }
 
-function toggle_todo(key){//切換todolist狀態
+function delTodoAll(key){//刪除全部以勾選的todolist
+    const deletePromises = key.map(key => axios.delete(`${apiUrl}/todos/${key}`));
+    Promise.all(deletePromises)
+    .then(response =>{
+        const current_tab = checkCurrentTab();
+        getTodo(current_tab);
+        Swal.fire({
+            icon: 'success',
+            title: '刪除完畢',
+            showConfirmButton: false,
+            timer: 1500
+        })
+    })
+}
+
+function toggleTodo(key){//切換todolist狀態
     axios.patch(`${apiUrl}/todos/${all_todo[key].id}/toggle`,{})
     .then(res =>{
         if(res.data.completed_at === null){
@@ -140,82 +154,57 @@ function toggle_todo(key){//切換todolist狀態
     })
 }
 
-function bar_reset(){//清除其他的css效果
+function barReset(){//清除其他的css效果
     for(const item of all_bar_li){
         item.classList.remove('active');
     }
 }
 
-function html_render(type){  //渲染資料
-    let str='';
-    if(type ==='all'){
-        all_todo.forEach((item,index)=>{
-            if(item.completed_at === null){
-                str+=`
-                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
-                    <div class="form-check d-flex align-items-center">
-                        <input type="checkbox" class="form-check-input ms-2 me-3">
-                        <i class="bi bi-check-lg d-none"></i>
-                        <label class="form-check-label mt-1">${item.content}</label>
-                    </div>
-                    <button class="btn-delete"><i class="bi bi-x-lg"></i></button>
-                </li>
-                `
-            }else{
-                not_complete--;
-                str+=`
-                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
-                    <div class="form-check d-flex align-items-center">
-                        <input type="checkbox" class="form-check-input ms-2 me-3 d-none">
-                        <i class="bi bi-check-lg"></i>
-                        <label class="form-check-label mt-1 active">${item.content}</label>
-                    </div>
-                    <button class="btn-delete"><i class="bi bi-x-lg"></i></button>
-                </li>
-                `
-            }
-            
-        })
-        
-    }else if(type ==='notComplete'){
-        all_todo.forEach((item,index)=>{
-            if(item.completed_at === null){
-                str+=`
-                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
-                    <div class="form-check d-flex align-items-center">
-                        <input type="checkbox" class="form-check-input ms-2 me-3">
-                        <i class="bi bi-check-lg d-none"></i>
-                        <label class="form-check-label mt-1">${item.content}</label>
-                    </div>
-                    <button class="btn-delete"><i class="bi bi-x-lg"></i></button>
-                </li>
-                `
-            }else{
-                not_complete--;
-            }
-            
-        })
-    }else if(type ==='comPlete'){
-        all_todo.forEach((item,index)=>{
-            if(item.completed_at !== null){
-                not_complete--;
-                str+=`
-                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
-                    <div class="form-check d-flex align-items-center">
-                        <input type="checkbox" class="form-check-input ms-2 me-3 d-none">
-                        <i class="bi bi-check-lg"></i>
-                        <label class="form-check-label mt-1 active">${item.content}</label>
-                    </div>
-                    <button class="btn-delete"><i class="bi bi-x-lg"></i></button>
-                </li>
-                `
-            }
-        })
+function filterData(todoList){
+    if(todoList === 'all'){
+        return all_todo;
+    }else if(todoList ==='notComplete'){
+        return all_todo.filter(todo => todo.completed_at === null);
+    }else if(todoList === 'comPlete'){
+        return all_todo.filter(todo => todo.completed_at !== null);
     }
-    list.innerHTML = str;
-    item_count.textContent = `${not_complete}`
 }
-function check_current_tab(){//確認目前按鈕的type
+
+function renderList(todoList){  //渲染資料
+    let str='';
+    let filteredData = filterData(todoList);
+    not_complete = filteredData.length;
+    filteredData.forEach((item,index) =>{
+        if(item.completed_at === null){
+            str+=`
+                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
+                    <div class="form-check d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input ms-2 me-3">
+                        <i class="bi bi-check-lg d-none"></i>
+                        <label class="form-check-label mt-1">${item.content}</label>
+                    </div>
+                    <button class="btn-delete"><i class="bi bi-x-lg"></i></button>
+                </li>
+                `
+        }else{
+            not_complete--;
+            str+=`
+                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
+                    <div class="form-check d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input ms-2 me-3 d-none">
+                        <i class="bi bi-check-lg"></i>
+                        <label class="form-check-label mt-1 active">${item.content}</label>
+                    </div>
+                    <button class="btn-delete"><i class="bi bi-x-lg"></i></button>
+                </li>
+                `
+        }
+    })
+    list.innerHTML = str;
+    item_count.textContent = `${not_complete}`;
+}
+
+function checkCurrentTab(){//確認目前按鈕的type
     let current;
     all_bar_li.forEach(item =>{
         if(item.classList.contains('active')){
@@ -226,11 +215,11 @@ function check_current_tab(){//確認目前按鈕的type
 }
 window.onload = function(){
     setTimeout(()=>{
-        loadingPage.classList.toggle('d-none');
+        loadingOberlay.classList.toggle('d-none');
     },2000)
 }
 
-init_token_render(sessionStorage.getItem('token'));//檢查有無token，若無token不顯示登入後的畫面
+initTokenRender(sessionStorage.getItem('token'));//檢查有無token，若無token不顯示登入後的畫面
 
 if(logOutBtn){ //登出功能
     logOutBtn.addEventListener('click',(event)=>{//登出按鈕
@@ -244,30 +233,22 @@ if(logOutBtn){ //登出功能
             timer: 1500
         })
         setTimeout(()=>{
-            init_token_render(sessionStorage.getItem('token'));
+            initTokenRender(sessionStorage.getItem('token'));
             sessionStorage.removeItem('nickname');
-            loadingPage.classList.toggle('d-none');
+            loadingOberlay.classList.toggle('d-none');
             document.location.href = './index.html';
         },1500)
         //移除token 避免每個使用者重疊登入token
     })
 }
 
-search_btn.addEventListener('click',(event)=>{
+searchBar.addEventListener('submit' , (event) =>{
     event.preventDefault();
-    check_token();//確認是否有token
-})
-search.addEventListener('keypress',(event)=>{
-    event.preventDefault();
-    if(event.key ==="Enter"){
-        check_token();//確認是否有token
-    }else{
-        return;
-    }
+    checkToken();//確認是否有token
 })
 
 list_bar.addEventListener('click',(event)=>{//狀態切換
-    bar_reset();
+    barReset();
     const target = event.target;
     getTodo(target.getAttribute('class'));
     target.classList.add('active');
@@ -293,7 +274,7 @@ list_items.addEventListener('click',(event)=>{ //判斷清單點擊選項
                     'success'
                     )
                 let dataID = data.getAttribute('data-num');
-                del_todo(all_todo[dataID].id);
+                delTodo(all_todo[dataID].id);
             }
             })
     }else if(event.target.getAttribute('type') === "checkbox"){
@@ -303,7 +284,7 @@ list_items.addEventListener('click',(event)=>{ //判斷清單點擊選項
         event.target.classList.toggle('d-none');
         checkLg.classList.toggle('d-none');
         itemLabel.classList.toggle('active');
-        toggle_todo(itemLi.getAttribute('data-num'));
+        toggleTodo(itemLi.getAttribute('data-num'));
     }else if(event.target.getAttribute('class') == "bi bi-check-lg"){
         const itemLi = event.target.parentNode.parentNode;
         const checkBox = itemLi.children[0].children[0];
@@ -311,7 +292,7 @@ list_items.addEventListener('click',(event)=>{ //判斷清單點擊選項
         event.target.classList.toggle('d-none');
         checkBox.classList.toggle('d-none');
         itemLabel.classList.toggle('active');
-        toggle_todo(itemLi.getAttribute('data-num'));
+        toggleTodo(itemLi.getAttribute('data-num'));
     }else{
         return;
     }
@@ -322,11 +303,12 @@ clearBtn.addEventListener('click',(event)=>{//清除所有已完成項目
     if(sessionStorage.getItem('token')){
         axios.get(`${apiUrl}/todos`)
         .then(res =>{
-            res.data.todos.forEach(item=>{
-                if(item.completed_at !== null){
-                    del_todo(item.id);
-                }
-            })
+            const deleteItems = res.data.todos
+            .filter(item => item.completed_at !== null)
+            .map(item => item.id);
+            if(deleteItems.length > 0){
+                delTodoAll(deleteItems);
+            }
         })
     }else{
         Swal.fire({
