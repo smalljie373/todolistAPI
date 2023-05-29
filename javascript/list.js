@@ -1,5 +1,5 @@
 const headerLogout = document.querySelector('.header_logout');
-const loadingOberlay = document.querySelector('.loadingPage');
+const loadingOverlay  = document.querySelector('.loadingPage');
 const todoInput = document.querySelector('#todoInput');
 const searchBar = document.querySelector('#searchBar');
 const empty = document.querySelector('.empty');
@@ -144,14 +144,18 @@ function delTodoAll(key){//刪除全部以勾選的todolist
 }
 
 function toggleTodo(key){//切換todolist狀態
-    axios.patch(`${apiUrl}/todos/${all_todo[key].id}/toggle`,{})
+    axios.patch(`${apiUrl}/todos/${key}/toggle`,{})
     .then(res =>{
+        const current_tab = checkCurrentTab();
         if(res.data.completed_at === null){
             item_count.textContent = parseInt(item_count.textContent) +1;
+            getTodo(current_tab);
         }else{
             item_count.textContent = parseInt(item_count.textContent) -1;
+            getTodo(current_tab);
         }
     })
+    
 }
 
 function barReset(){//清除其他的css效果
@@ -174,10 +178,10 @@ function renderList(todoList){  //渲染資料
     let str='';
     let filteredData = filterData(todoList);
     not_complete = filteredData.length;
-    filteredData.forEach((item,index) =>{
+    filteredData.forEach((item) =>{
         if(item.completed_at === null){
             str+=`
-                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
+                <li class="d-flex align-items-center justify-content-between" data-num=${item.id}>
                     <div class="form-check d-flex align-items-center">
                         <input type="checkbox" class="form-check-input ms-2 me-3">
                         <i class="bi bi-check-lg d-none"></i>
@@ -189,7 +193,7 @@ function renderList(todoList){  //渲染資料
         }else{
             not_complete--;
             str+=`
-                <li class="d-flex align-items-center justify-content-between" data-num=${index}>
+                <li class="d-flex align-items-center justify-content-between" data-num=${item.id}>
                     <div class="form-check d-flex align-items-center">
                         <input type="checkbox" class="form-check-input ms-2 me-3 d-none">
                         <i class="bi bi-check-lg"></i>
@@ -215,7 +219,7 @@ function checkCurrentTab(){//確認目前按鈕的type
 }
 window.onload = function(){
     setTimeout(()=>{
-        loadingOberlay.classList.toggle('d-none');
+        loadingOverlay.classList.toggle('d-none');
     },2000)
 }
 
@@ -235,7 +239,7 @@ if(logOutBtn){ //登出功能
         setTimeout(()=>{
             initTokenRender(sessionStorage.getItem('token'));
             sessionStorage.removeItem('nickname');
-            loadingOberlay.classList.toggle('d-none');
+            loadingOverlay.classList.toggle('d-none');
             document.location.href = './index.html';
         },1500)
         //移除token 避免每個使用者重疊登入token
@@ -260,7 +264,7 @@ list_items.addEventListener('click',(event)=>{ //判斷清單點擊選項
         const data = event.target.parentNode;
         Swal.fire({
             title: '你確定?',
-            text: `您即將刪除第${data.getAttribute('data-num')}項清單內容!`,
+            text: `您即將刪除該項清單內容!`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
@@ -274,7 +278,7 @@ list_items.addEventListener('click',(event)=>{ //判斷清單點擊選項
                     'success'
                     )
                 let dataID = data.getAttribute('data-num');
-                delTodo(all_todo[dataID].id);
+                delTodo(dataID);
             }
             })
     }else if(event.target.getAttribute('type') === "checkbox"){
@@ -285,6 +289,7 @@ list_items.addEventListener('click',(event)=>{ //判斷清單點擊選項
         checkLg.classList.toggle('d-none');
         itemLabel.classList.toggle('active');
         toggleTodo(itemLi.getAttribute('data-num'));
+        
     }else if(event.target.getAttribute('class') == "bi bi-check-lg"){
         const itemLi = event.target.parentNode.parentNode;
         const checkBox = itemLi.children[0].children[0];

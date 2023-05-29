@@ -11,27 +11,27 @@ const blank = /^[\s]/g;
 const apiUrl = `https://todoo.5xcamp.us`;
 
 window.onload = function() {
-  const loadingOberlay = document.querySelector('.loadingPage');
+  const loadingOverlay = document.querySelector('.loadingPage');
   setTimeout(()=>{
-    loadingOberlay.classList.toggle('d-none');
+    loadingOverlay .classList.toggle('d-none');
   }, 2000);
 };
 
 function login(email, password) {//登入
     const errorloginEmail = document.querySelector('.error-loginEmail');
     const errorloginPassword = document.querySelector('.error-loginPassword');
+    const isEmptyField = (fieId) => blank.test(fieId) || fieId === '';
     errorloginEmail.classList.add("d-none");
     errorloginPassword.classList.add("d-none");
-    if((blank.test(email) || email === '') || (blank.test(password) || password === '')){
-        if(blank.test(email) || email ===''){
-            errorloginEmail.classList.remove("d-none");
-            loginEmail.value ='';
-        }else if(blank.test(password) || password ===""){
-            errorloginPassword.classList.remove("d-none");
-            loginpassword.value ="";
-        }
-        return;
+    if(isEmptyField(email)) {
+        errorloginEmail.classList.remove("d-none");
+        loginEmail.value ='';
     }
+    if(isEmptyField(password)) {
+        errorloginPassword.classList.remove("d-none");
+        loginpassword.value ="";
+    }
+    if(isEmptyField(email) || isEmptyField(password)){return;}
     axios.post(`${apiUrl}/users/sign_in`,{
         "user":{
             "email": email,
